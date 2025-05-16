@@ -10,7 +10,7 @@ A Python-based stock advisor application that fetches real-time market data, cal
 - Implements multiple trading strategies:
   - MA crossovers with RSI filters
   - Bollinger Bands mean reversion and breakout strategies
-  - MACD + Stochastic momentum strategy
+  - MACD + Stochastic momentum strategy with enhanced backtesting capabilities
 - Tracks portfolio performance and simulated trades
 - Provides reporting and alerts via CLI dashboard
 - Includes specialized testing and backtesting functionality
@@ -28,6 +28,7 @@ stock-advisor/
 │   └─ report/         # reporting and alerts functionality
 ├─ data/               # Local data storage
 ├─ results/            # Backtest results
+├─ debug_*.py          # Debugging scripts
 └─ tests/              # unit tests
 ```
 
@@ -204,6 +205,9 @@ python test_macd_stoch.py MSFT --stoch-k 9 --stoch-d 5 --stoch-oversold 25
 
 # Test with a different time interval and period
 python test_macd_stoch.py GOOGL --interval 1h --days 90
+
+# Test with different oversold/overbought thresholds
+python test_macd_stoch.py AAPL --stoch-oversold 30 --stoch-overbought 70
 ```
 
 You can also backtest full strategies using the backtesting module:
@@ -217,6 +221,9 @@ python backtest.py --ticker SPY --strategy bollinger_bands --days 60
 
 # Backtest the MACD + Stochastic strategy
 python backtest.py --ticker MSFT --strategy macd_stochastic --days 90
+
+# Debugging strategy behavior
+python debug_macd_stoch.py --ticker SPY
 ```
 
 ## Configuring Email Notifications
@@ -248,6 +255,25 @@ Here are some ideas for extending the project:
 - Add real-time market data with websockets
 - Integrate with a brokerage API for automated trading
 - Implement machine learning for predictive analytics
+
+## Recent Improvements
+
+### MACD + Stochastic Strategy Enhancements
+
+The MACD + Stochastic strategy has been significantly improved to work better with limited historical data:
+
+- **Adaptive Signal Generation**: The strategy now adjusts its signal generation logic based on the size of the available dataset
+- **Improved Backtesting**: Enhanced to generate reliable signals even with small datasets by implementing initial position logic
+- **Better Error Handling**: Added robust fallback calculations for technical indicators when primary methods fail
+- **Debugging Tools**: New debugging script (`debug_macd_stoch.py`) for visualizing indicator calculations and signal generation
+- **Flexible Parameters**: Additional configuration options for fine-tuning strategy behavior
+
+### Technical Infrastructure Improvements
+
+- **Bollinger Bands Calculation**: Added fallback manual calculation when pandas_ta encounters errors
+- **Compatible Dependencies**: Updated requirements to ensure numpy and pandas-ta work correctly together
+- **Enhanced Logging**: More detailed logging to track indicator calculation and strategy behavior
+- **Performance Metrics**: Additional metrics for evaluating strategy performance in backtests
 
 ## Disclaimer
 
