@@ -9,7 +9,7 @@ from app.screener.discover import find_candidates, save_candidates, get_candidat
 class TestStockDiscovery(unittest.TestCase):
     """Test suite for stock discovery module"""
     
-    @patch('app.screener.discover.Screener')
+    @patch('finvizfinance.screener.overview.Overview')
     def test_find_candidates(self, mock_screener):
         """Test finding stock candidates with a mock screener"""
         # Setup mock
@@ -35,7 +35,7 @@ class TestStockDiscovery(unittest.TestCase):
         # Verify mock was called with correct filters
         mock_screener.assert_called_once()
         
-    @patch('app.screener.discover.Screener')
+    @patch('finvizfinance.screener.overview.Overview')
     def test_find_candidates_with_custom_price(self, mock_screener):
         """Test finding stock candidates with custom price range"""
         # Setup mock
@@ -72,10 +72,12 @@ class TestStockDiscovery(unittest.TestCase):
         self.assertTrue(result)
         mock_to_parquet.assert_called_once()
         
+    @patch('app.screener.discover.CANDIDATES_FILE')
     @patch('pandas.read_parquet')
-    def test_get_candidates(self, mock_read_parquet):
+    def test_get_candidates(self, mock_read_parquet, mock_file):
         """Test getting candidates from parquet file"""
-        # Setup mock
+        # Setup mocks
+        mock_file.exists.return_value = True  # Make the file appear to exist
         mock_read_parquet.return_value = pd.DataFrame({
             'Ticker': ['AAPL', 'MSFT', 'GOOGL'],
             'Price': [150.0, 250.0, 120.0],
