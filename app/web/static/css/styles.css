@@ -1,0 +1,125 @@
+/* Main styles for Stock Advisor web application */
+
+/* Global styles */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}
+
+/* Card styling */
+.card {
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+    font-weight: 500;
+}
+
+/* Navbar customization */
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* Table styling */
+.table td, .table th {
+    vertical-align: middle;
+}
+
+/* Custom badges */
+.badge {
+    font-size: 85%;
+    padding: 0.35em 0.65em;
+    font-weight: 500;
+}
+
+/* Chart containers */
+.chart-container {
+    position: relative;
+    min-height: 300px;
+}
+
+/* Widget cards */
+.widget-card {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.widget-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Custom colors for different sections */
+.bg-portfolio {
+    background-color: #3498db !important;
+}
+
+.bg-signals {
+    background-color: #2ecc71 !important;
+}
+
+.bg-discovery {
+    background-color: #9b59b6 !important;
+}
+
+.bg-charts {
+    background-color: #f39c12 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-title {
+        font-size: 1.25rem;
+    }
+    
+    .display-4 {
+        font-size: 2.5rem;
+    }
+}
+
+/* Footer */
+.footer {
+    background-color: #f8f9fa;
+    padding: 1.5rem 0;
+    margin-top: auto;
+}
+
+/* Custom buttons */
+.btn-action {
+    border-radius: 50px;
+    padding: 0.5rem 1.5rem;
+}
+
+/* Loading spinner */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0.5rem;
+    z-index: 100;
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

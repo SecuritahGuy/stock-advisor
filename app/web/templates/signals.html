@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h2 class="card-title mb-0">
+                    <i class="bi bi-graph-up-arrow"></i> Trading Signals
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">Signal Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="signalPieChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">Signal Timeline</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="signalTimelineChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="mt-4 mb-3">Recent Trading Signals</h3>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Ticker</th>
+                                <th>Action</th>
+                                <th class="text-end">Price</th>
+                                <th>Strength</th>
+                                <th>Reason</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if signals %}
+                                {% for signal in signals %}
+                                <tr>
+                                    <td>{{ signal.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td><a href="{{ url_for('chart_view', ticker=signal.ticker) }}">{{ signal.ticker }}</a></td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if signal.action.value == 'BUY' else 'danger' }}">
+                                            {{ signal.action.value }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">${{ "%.2f"|format(signal.price) }}</td>
+                                    <td>{{ signal.strength.value }}</td>
+                                    <td>{{ signal.reason }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('chart_view', ticker=signal.ticker) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-graph-up"></i> Chart
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center">No signals available.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateSignalsModal">
+                        <i class="bi bi-lightning-charge"></i> Generate New Signals
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Signals Modal -->
+<div class="modal fade" id="generateSignalsModal" tabindex="-1" aria-labelledby="generateSignalsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="generateSignalsModalLabel">Generate Trading Signals</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="generateSignalsForm" method="post" action="#">
+                    <div class="mb-3">
+                        <label for="ticker" class="form-label">Ticker Symbol (comma-separated for multiple)</label>
+                        <input type="text" class="form-control" id="ticker" name="ticker" placeholder="AAPL,MSFT,GOOGL" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="strategy" class="form-label">Strategy</label>
+                        <select class="form-select" id="strategy" name="strategy" required>
+                            <option value="ma_crossover_rsi">MA Crossover with RSI</option>
+                            <option value="macd_stochastic">MACD with Stochastic</option>
+                            <option value="bollinger_breakout">Bollinger Breakout</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="period" class="form-label">Period</label>
+                        <select class="form-select" id="period" name="period">
+                            <option value="1wk">1 Week</option>
+                            <option value="1mo" selected>1 Month</option>
+                            <option value="3mo">3 Months</option>
+                            <option value="6mo">6 Months</option>
+                            <option value="1y">1 Year</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notifyOnSignal" name="notify">
+                            <label class="form-check-label" for="notifyOnSignal">
+                                Notify me when signals are ready
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="generateSignalsForm" class="btn btn-success">Generate Signals</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create Signal Pie Chart
+        const pieCtx = document.getElementById('signalPieChart').getContext('2d');
+        
+        // Count of buy/sell signals
+        let buyCount = 0;
+        let sellCount = 0;
+        
+        {% if signals %}
+            {% for signal in signals %}
+                {% if signal.action.value == 'BUY' %}
+                    buyCount++;
+                {% else %}
+                    sellCount++;
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        
+        const signalPieChart = new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Buy Signals', 'Sell Signals'],
+                datasets: [{
+                    data: [buyCount, sellCount],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.7)', // green for buy
+                        'rgba(220, 53, 69, 0.7)'  // red for sell
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+        
+        // Create Signal Timeline Chart
+        const timelineCtx = document.getElementById('signalTimelineChart').getContext('2d');
+        
+        // Sample dates (in a real app, you would get these from the signals)
+        const dates = [];
+        const buySignals = [];
+        const sellSignals = [];
+        
+        {% if signals %}
+            // Create a map to count signals by date
+            const signalsByDate = {};
+            
+            {% for signal in signals %}
+                const dateKey = '{{ signal.timestamp.strftime("%Y-%m-%d") }}';
+                
+                if (!signalsByDate[dateKey]) {
+                    signalsByDate[dateKey] = { buy: 0, sell: 0 };
+                    dates.push(dateKey);
+                }
+                
+                if ('{{ signal.action.value }}' === 'BUY') {
+                    signalsByDate[dateKey].buy++;
+                } else {
+                    signalsByDate[dateKey].sell++;
+                }
+            {% endfor %}
+            
+            // Sort dates
+            dates.sort();
+            
+            // Fill the datasets
+            for (const date of dates) {
+                buySignals.push(signalsByDate[date].buy);
+                sellSignals.push(signalsByDate[date].sell);
+            }
+        {% else %}
+            // Sample data if no signals
+            dates.push('2025-05-10', '2025-05-11', '2025-05-12', '2025-05-13', '2025-05-14');
+            buySignals.push(2, 1, 3, 0, 2);
+            sellSignals.push(1, 2, 0, 3, 1);
+        {% endif %}
+        
+        const signalTimelineChart = new Chart(timelineCtx, {
+            type: 'bar',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Buy Signals',
+                        data: buySignals,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Sell Signals',
+                        data: sellSignals,
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Generate signals form handling
+        document.getElementById('generateSignalsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Signal generation functionality will be implemented in a future update.');
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('generateSignalsModal'));
+            modal.hide();
+        });
+    });
+</script>
+{% endblock %}

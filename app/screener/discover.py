@@ -23,6 +23,17 @@ DATA_DIR.mkdir(exist_ok=True)
 # File to store candidates
 CANDIDATES_FILE = DATA_DIR / 'candidates.parquet'
 
+# Configure filter mapping for RSI(14)
+# FinViz expects 'RSI (14)' but internally we use 'rsi14' for convenience
+FILTER_MAPPING = {
+    'rsi14': 'RSI (14)',
+    'sma200_pa': '200-Day Simple Moving Average',
+    'sma50_pa': '50-Day Simple Moving Average',
+    'sma20_pa': '20-Day Simple Moving Average',
+    'ta_change': 'Change',
+    'ta_highlow52w': '52-Week High/Low'
+}
+
 # Configure default strategy filters
 STRATEGIES = {
     "oversold_reversals": {
@@ -89,14 +100,22 @@ def find_candidates(strategy="oversold_reversals", limit=20, min_price=10, max_p
             price_range = f"{min_price}to{max_price}"
             filters["price"] = price_range
 
-        logger.info(f"Running {STRATEGIES[strategy]['name']} screener with filters: {filters}")
+        # Convert internal filter names to FinViz's expected names
+        finviz_filters = {}
+        for key, value in filters.items():
+            if key in FILTER_MAPPING:
+                finviz_filters[FILTER_MAPPING[key]] = value
+            else:
+                finviz_filters[key] = value
+
+        logger.info(f"Running {STRATEGIES[strategy]['name']} screener with filters: {finviz_filters}")
 
         # Initialize the screener
         screener = Screener()
         
         # Attempt to set filters; continue even if invalid filters occur
         try:
-            screener.set_filter(filters_dict=filters)
+            screener.set_filter(filters_dict=finviz_filters)
         except Exception as e:
             logger.warning(f"Error setting screener filters: {e}. Proceeding without filters.")
         

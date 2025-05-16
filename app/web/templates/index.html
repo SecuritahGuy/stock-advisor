@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h2 class="card-title mb-0">
+                    <i class="bi bi-speedometer2"></i> Stock Advisor Dashboard
+                </h2>
+            </div>
+            <div class="card-body">
+                <p class="lead">Welcome to the Stock Advisor web dashboard. Use the navigation menu to explore different sections.</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <i class="bi bi-wallet2 fs-1 text-primary mb-3"></i>
+                                <h5 class="card-title">Portfolio</h5>
+                                <p class="card-text">Track your positions and performance metrics</p>
+                                <a href="{{ url_for('portfolio_view') }}" class="btn btn-primary">View Portfolio</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <i class="bi bi-graph-up-arrow fs-1 text-success mb-3"></i>
+                                <h5 class="card-title">Signals</h5>
+                                <p class="card-text">View recent trading signals from strategies</p>
+                                <a href="{{ url_for('signals_view') }}" class="btn btn-success">View Signals</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <i class="bi bi-search fs-1 text-info mb-3"></i>
+                                <h5 class="card-title">Discovery</h5>
+                                <p class="card-text">Find new trading candidates with screeners</p>
+                                <a href="{{ url_for('discovery_view') }}" class="btn btn-info">Discover Stocks</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <i class="bi bi-bar-chart-line fs-1 text-warning mb-3"></i>
+                                <h5 class="card-title">Charts</h5>
+                                <p class="card-text">Interactive stock charts and indicators</p>
+                                <a href="{{ url_for('chart_view', ticker='AAPL') }}" class="btn btn-warning">View Charts</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-success text-white">
+                <h3 class="card-title mb-0">
+                    <i class="bi bi-graph-up-arrow"></i> Recent Signals
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="recent-signals-loading" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Loading recent signals...</p>
+                </div>
+                <div id="recent-signals" class="d-none">
+                    <!-- Signals will be loaded here via JavaScript -->
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('signals_view') }}" class="btn btn-outline-success">
+                    View All Signals <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="bi bi-wallet2"></i> Portfolio Summary
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="portfolio-summary-loading" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Loading portfolio data...</p>
+                </div>
+                <div id="portfolio-summary" class="d-none">
+                    <!-- Portfolio summary will be loaded here via JavaScript -->
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('portfolio_view') }}" class="btn btn-outline-primary">
+                    View Full Portfolio <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load recent signals
+        fetch('/api/signals?limit=5')
+            .then(response => response.json())
+            .then(data => {
+                const signalsContainer = document.getElementById('recent-signals');
+                const loadingIndicator = document.getElementById('recent-signals-loading');
+                
+                if (data.length === 0) {
+                    signalsContainer.innerHTML = '<p class="text-muted">No recent signals available.</p>';
+                } else {
+                    let signalsHtml = '<div class="list-group">';
+                    
+                    data.forEach(signal => {
+                        const actionClass = signal.action === 'BUY' ? 'success' : 'danger';
+                        const actionIcon = signal.action === 'BUY' ? 'arrow-up-circle-fill' : 'arrow-down-circle-fill';
+                        
+                        signalsHtml += `
+                            <a href="/chart/${signal.ticker}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">
+                                        <span class="badge bg-${actionClass}">
+                                            <i class="bi bi-${actionIcon}"></i> ${signal.action}
+                                        </span>
+                                        ${signal.ticker}
+                                    </h5>
+                                    <small>${signal.timestamp}</small>
+                                </div>
+                                <p class="mb-1">${signal.reason}</p>
+                                <small>Price: $${signal.price.toFixed(2)} | Strength: ${signal.strength}</small>
+                            </a>
+                        `;
+                    });
+                    
+                    signalsHtml += '</div>';
+                    signalsContainer.innerHTML = signalsHtml;
+                }
+                
+                // Hide loading indicator, show content
+                loadingIndicator.classList.add('d-none');
+                signalsContainer.classList.remove('d-none');
+            })
+            .catch(error => {
+                console.error('Error fetching signals:', error);
+                document.getElementById('recent-signals-loading').innerHTML = 
+                    '<div class="alert alert-danger">Error loading signals</div>';
+            });
+        
+        // Load portfolio summary
+        fetch('/api/portfolio/data')
+            .then(response => response.json())
+            .then(data => {
+                const portfolioContainer = document.getElementById('portfolio-summary');
+                const loadingIndicator = document.getElementById('portfolio-summary-loading');
+                
+                if (!data.positions || data.positions.length === 0) {
+                    portfolioContainer.innerHTML = '<p class="text-muted">Your portfolio is currently empty.</p>';
+                } else {
+                    let totalValue = data.total_value || 0;
+                    let totalPL = data.total_pl || 0;
+                    let totalPLPct = data.total_pl_pct || 0;
+                    
+                    let plClass = totalPL >= 0 ? 'success' : 'danger';
+                    let plIcon = totalPL >= 0 ? 'arrow-up' : 'arrow-down';
+                    
+                    let summaryHtml = `
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-subtitle mb-2 text-muted">Total Value</h6>
+                                        <h3 class="card-title">$${totalValue.toFixed(2)}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card bg-${plClass} text-white">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-subtitle mb-2">Total P/L</h6>
+                                        <h3 class="card-title">
+                                            <i class="bi bi-${plIcon}"></i>
+                                            $${totalPL.toFixed(2)} (${totalPLPct.toFixed(2)}%)
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <h5>Top Positions</h5>
+                    `;
+                    
+                    // Sort positions by value and get top 3
+                    const topPositions = [...data.positions]
+                        .sort((a, b) => b.current_value - a.current_value)
+                        .slice(0, 3);
+                    
+                    summaryHtml += '<div class="list-group">';
+                    
+                    topPositions.forEach(position => {
+                        const posPlClass = position.pl >= 0 ? 'success' : 'danger';
+                        
+                        summaryHtml += `
+                            <a href="/chart/${position.ticker}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">${position.ticker}</h5>
+                                    <span class="badge bg-${posPlClass}">
+                                        ${position.pl_pct.toFixed(2)}%
+                                    </span>
+                                </div>
+                                <div class="d-flex w-100 justify-content-between">
+                                    <span>${position.shares} shares</span>
+                                    <span>$${position.current_value.toFixed(2)}</span>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    
+                    summaryHtml += '</div>';
+                    portfolioContainer.innerHTML = summaryHtml;
+                }
+                
+                // Hide loading indicator, show content
+                loadingIndicator.classList.add('d-none');
+                portfolioContainer.classList.remove('d-none');
+            })
+            .catch(error => {
+                console.error('Error fetching portfolio data:', error);
+                document.getElementById('portfolio-summary-loading').innerHTML = 
+                    '<div class="alert alert-danger">Error loading portfolio data</div>';
+            });
+    });
+</script>
+{% endblock %}
