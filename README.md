@@ -47,6 +47,9 @@ source .venv/bin/activate  # On Windows, use: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
+# If you encounter issues with pandas_ta, use this specific numpy version
+# pip install numpy==1.24.3
+
 # Set up environment variables
 cp .env.example .env
 # Edit .env with your preferred settings and email credentials
