@@ -362,7 +362,7 @@ class Portfolio:
             cost_basis = position['cost_basis']
             total_cost_position = shares * cost_basis
             
-            # Get current price
+            # Get current price - use cost_basis as fallback if not available
             current_price = price_data.get(ticker)
             
             if current_price is None:
@@ -380,7 +380,7 @@ class Portfolio:
                 'ticker': ticker,
                 'shares': shares,
                 'cost_basis': cost_basis,
-                'current_price': current_price,
+                'current_price': current_price if current_price is not None else cost_basis,  # Use cost_basis as fallback
                 'current_value': current_value,
                 'total_cost': total_cost_position,
                 'pl': pl,
