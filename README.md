@@ -20,6 +20,8 @@ A Python-based stock advisor application that fetches real-time market data, cal
   - MACD + Stochastic momentum strategy
 - Tracks portfolio performance and simulated trades
 - Provides reporting and alerts via CLI dashboard
+- **Web Dashboard**: Interactive Flask-based UI for portfolio management and visualization
+- **Portfolio Management**: Configuration-based setup and position management
 - **Discovery engine**: Daily screener auto-adds oversold or breakout candidates to watch-list
 - Includes specialized testing and backtesting functionality
 - Supports Docker deployment with environment variable configuration
@@ -148,6 +150,7 @@ The application loads environment variables via dotenv; see `.env.example` for r
 - [Quick Start Guide](./docs/quickstart.md)
 - [Trading Strategies](./docs/strategies.md)
 - [Backtesting Guide](./docs/backtesting.md)
+- [Portfolio Setup Guide](./docs/portfolio_setup.md)
 - [Stock Discovery](./docs/discovery.md)
 - [Project Roadmap](./docs/roadmap.md)
 
@@ -193,10 +196,37 @@ python advisor.py --strategy bollinger_bands
 </details>
 
 <details>
+<summary>Web Dashboard Examples</summary>
+
+```bash
+# Start the web dashboard
+./start_web.sh
+
+# Access the dashboard in your browser
+# Visit: http://127.0.0.1:5050
+
+# Initialize your portfolio using the configuration file
+./setup_portfolio.py
+
+# Test portfolio setup methods
+./test_portfolio_setup.sh
+```
+</details>
+
+<details>
 <summary>Portfolio Management Examples</summary>
 
 ```bash
-# Buy shares
+# Initialize portfolio from configuration file
+./setup_portfolio.py
+
+# Configure with a custom config file
+./setup_portfolio.py --config my_portfolio.json
+
+# Reset portfolio first, then set up
+./setup_portfolio.py --reset
+
+# Buy shares manually
 python trade.py buy --ticker AAPL --qty 10 --price 150.00
 
 # Sell shares
@@ -284,6 +314,26 @@ Here are some ideas for extending the project:
 
 ## Recent Improvements
 
+### Web Dashboard Implementation
+
+A Flask-based web dashboard has been implemented to enhance user experience and provide visual insights:
+
+- **Interactive Portfolio Management**: View and manage portfolio positions with performance metrics
+- **Trading Signals Visualization**: Monitor buy/sell signals with detailed information
+- **Stock Discovery Interface**: Explore potential investment candidates through the web interface
+- **Chart View**: Visualize stock performance and technical indicators for each ticker
+- **Mobile-Responsive Design**: Access the dashboard from any device with a responsive layout
+
+### Portfolio Management Enhancements
+
+Portfolio management has been significantly improved with new features:
+
+- **Configuration-Based Setup**: Easily initialize your portfolio using JSON configuration
+- **Web Form Integration**: Add positions through an intuitive web interface
+- **Performance Metrics**: Track portfolio valuation, returns, volatility, and Sharpe ratio
+- **Position Management**: View detailed position-level metrics and performance
+- **Comprehensive Documentation**: Detailed guides for portfolio setup and management
+
 ### MACD + Stochastic Strategy Enhancements
 
 The MACD + Stochastic strategy has been significantly improved to work better with limited historical data:
@@ -305,7 +355,7 @@ The MACD + Stochastic strategy has been significantly improved to work better wi
 
 ### Short-term Improvements (Next 1-3 Months)
 
-- **Web Dashboard**: Create a Flask or Streamlit-based web interface for easier monitoring of signals and portfolio performance
+- **Web Dashboard Enhancements**: Add more interactive features and visualization options
 - **Parameter Optimization**: Implement grid search and genetic algorithms for automated strategy optimization
 - **Portfolio Optimization**: Add portfolio allocation recommendations based on risk-adjusted returns
 - **Indicator Combination Analysis**: Investigate which indicator combinations perform best across different market conditions
@@ -339,11 +389,13 @@ The MACD + Stochastic strategy has been significantly improved to work better wi
 
 ## Current Project Status
 
-As of May 2025, the project has successfully implemented three main trading strategies with comprehensive backtesting capabilities. The recent focus has been on improving the MACD + Stochastic strategy to work reliably with limited historical data and fixing technical issues with indicator calculations.
+As of May 2025, the project has successfully implemented three main trading strategies with comprehensive backtesting capabilities. We've recently added a Flask-based web dashboard for interactive portfolio management and visualization, with mobile-responsive design and integrated stock discovery.
+
+The portfolio management system has been enhanced with configuration-based setup, web form integration, and comprehensive documentation. We've also improved the MACD + Stochastic strategy to work reliably with limited historical data and fixed technical issues with indicator calculations.
 
 The backtesting module now provides detailed performance metrics including CAGR, Sharpe ratio, maximum drawdown, win rate, and profit factor. We've also developed specialized debugging tools to help visualize and understand strategy behavior.
 
-Next steps include web interface development, parameter optimization, and machine learning integration. Community contributions are welcome, especially in these planned improvement areas.
+Next steps include enhancing the web interface with more interactive features, implementing parameter optimization, and exploring machine learning integration. Community contributions are welcome, especially in these planned improvement areas.
 
 ## Contributing
 
