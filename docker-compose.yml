@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  stock-advisor:
+    build: .
+    container_name: stock-advisor
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "5000:5000"  # For future web UI
+    command: python advisor.py
