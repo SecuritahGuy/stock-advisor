@@ -158,6 +158,13 @@ def create_metrics_table(metrics):
     return table
 
 
+def display_empty_portfolio_message():
+    """
+    Display a message on the dashboard when the portfolio is empty.
+    """
+    print("\n[bold yellow]Your portfolio is currently empty. Add positions to start tracking performance.[/bold yellow]\n")
+
+
 def display_dashboard(portfolio_data, signals, metrics):
     """
     Display the main dashboard with portfolio, signals, and metrics.
@@ -201,7 +208,10 @@ def display_dashboard(portfolio_data, signals, metrics):
     )
     
     # Add portfolio table
-    layout["portfolio"].update(create_portfolio_table(portfolio_data))
+    if not portfolio_data['positions']:
+        display_empty_portfolio_message()
+    else:
+        layout["portfolio"].update(create_portfolio_table(portfolio_data))
     
     # Add signals table
     layout["signals"].update(create_signals_table(signals))
