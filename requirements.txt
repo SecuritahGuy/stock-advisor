@@ -9,7 +9,7 @@ idna==3.10
 markdown-it-py==3.0.0
 mdurl==0.1.2
 multitasking==0.0.11
-numpy==2.0.2
+numpy==1.24.3
 pandas==2.2.3
 pandas-ta==0.3.14b0
 peewee==3.18.1
