@@ -2,10 +2,11 @@
 Flask web application for Stock Advisor dashboard.
 """
 import logging
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from pathlib import Path
 import sys
 import pandas as pd
+from datetime import datetime
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -28,6 +29,12 @@ logger = logging.getLogger("web_app")
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'stock-advisor-secret-key'
 
+# Add template context processor for current year
+@app.context_processor
+def inject_year():
+    """Add current year to all templates."""
+    return {'current_year': datetime.now().year}
+
 # Initialize portfolio
 portfolio = Portfolio(name="default")
 
@@ -38,13 +45,75 @@ def index():
     return render_template('index.html', title='Stock Advisor Dashboard')
 
 
-@app.route('/portfolio')
+@app.route('/portfolio', methods=['GET', 'POST'])
 def portfolio_view():
     """Render portfolio page with current positions and performance."""
     try:
+        # Handle form submission for adding a position
+        if request.method == 'POST':
+            # Get form data
+            ticker = request.form.get('ticker', '').strip().upper()
+            shares = float(request.form.get('shares', 0))
+            price = float(request.form.get('price', 0))
+            date_str = request.form.get('date')
+            notes = request.form.get('notes', '')
+            
+            # Validate input
+            errors = []
+            if not ticker:
+                errors.append("Ticker symbol is required")
+            if shares <= 0:
+                errors.append("Shares must be a positive number")
+            if price <= 0:
+                errors.append("Price must be a positive number")
+            
+            # Parse date if provided
+            timestamp = None
+            if date_str:
+                try:
+                    timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                except ValueError:
+                    errors.append("Invalid date format. Use YYYY-MM-DD")
+            
+            # Add position if no errors
+            if not errors:
+                position_id = portfolio.add_position(
+                    ticker=ticker,
+                    shares=shares,
+                    price=price,
+                    timestamp=timestamp,
+                    notes=notes
+                )
+                
+                if position_id:
+                    flash(f"Added {shares} shares of {ticker} at ${price:.2f}", "success")
+                else:
+                    flash("Failed to add position", "danger")
+            else:
+                for error in errors:
+                    flash(error, "danger")
+        
         # Get portfolio data
-        portfolio_data = get_portfolio_valuation(portfolio)
-        metrics = get_portfolio_metrics(portfolio, period='1mo')
+        try:
+            portfolio_data = get_portfolio_valuation(portfolio)
+        except Exception as e:
+            logger.error(f"Error getting portfolio valuation: {str(e)}")
+            portfolio_data = {
+                'total_value': 0,
+                'total_cost': 0,
+                'total_pl': 0,
+                'total_pl_pct': 0,
+                'positions': []
+            }
+            flash("Could not retrieve portfolio valuation. Using default values.", "warning")
+        
+        # Get metrics
+        try:
+            metrics = get_portfolio_metrics(portfolio, period='1mo')
+        except Exception as e:
+            logger.error(f"Error getting portfolio metrics: {str(e)}")
+            metrics = {}
+            flash("Could not retrieve portfolio metrics.", "warning")
         
         return render_template(
             'portfolio.html',
@@ -53,7 +122,8 @@ def portfolio_view():
             metrics=metrics
         )
     except Exception as e:
-        logger.error(f"Error getting portfolio data: {str(e)}")
+        logger.error(f"Error in portfolio view: {str(e)}")
+        flash(f"An error occurred: {str(e)}", "danger")
         return render_template('error.html', error=str(e))
 
 
