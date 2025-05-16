@@ -1,0 +1,22 @@
+from app.screener.discover import Screener
+import unittest
+
+class TestStockDiscovery(unittest.TestCase):
+
+    def setUp(self):
+        self.screener = Screener()
+
+    def test_find_candidates(self):
+        candidates = self.screener.find_candidates()
+        self.assertIsNotNone(candidates)
+
+    def test_find_candidates_with_custom_price(self):
+        candidates = self.screener.find_candidates(price_range=(10, 50))
+        self.assertIsNotNone(candidates)
+
+    def test_get_candidates(self):
+        result = self.screener.get_candidates_from_parquet('data/candidates.parquet')
+        self.assertEqual(len(result), 2)
+
+if __name__ == '__main__':
+    unittest.main()
