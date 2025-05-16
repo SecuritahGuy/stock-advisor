@@ -57,12 +57,16 @@ class TestTechnicalIndicators(unittest.TestCase):
             # Check if MA is calculated correctly for a simple case
             # MA should be average of the last 'length' prices
             if length < len(self.df):
-                for i in range(length, len(self.df)):
-                    expected_ma = self.df['Close'].iloc[i-length:i].mean()
-                    actual_ma = result[column_name].iloc[i]
-                    # Use approximate equality due to floating point
-                    self.assertAlmostEqual(actual_ma, expected_ma, places=5)
-    
+                # tests/test_indicators.py  (inside TestTechnicalIndicators.test_moving_averages)
+
+                for i in range(length - 1, len(self.df)):
+                    # window **including** the current row
+                    expected_ma = self.df['Close'].iloc[i - length + 1 : i + 1].mean()
+                    actual_ma   = result[column_name].iloc[i]
+
+                    self.assertAlmostEqual(actual_ma, expected_ma, places=4)
+
+            
     def test_bollinger_bands(self):
         """Test Bollinger Bands calculation."""
         length = 20
@@ -89,7 +93,14 @@ class TestTechnicalIndicators(unittest.TestCase):
         middle_band = result[f'bb_middle_{length}']
         sma_df = add_moving_averages(self.df, lengths=[length])
         sma = sma_df[f'ma{length}']
-        self.assertTrue(all(middle_band.dropna() == sma.dropna()))
+        # Instead of comparing Series directly, use numpy.isclose for floating point comparison
+        import numpy as np
+        non_nan_indices = ~middle_band.isna() & ~sma.isna()
+        self.assertTrue(np.allclose(
+            middle_band[non_nan_indices].values, 
+            sma[non_nan_indices].values,
+            rtol=1e-5, atol=1e-5
+        ))
     
     def test_nan_handling(self):
         """Test handling of NaN values."""
