@@ -6,10 +6,11 @@ A Python-based stock advisor application that fetches real-time market data, cal
 
 - Fetches 1-minute stock data from Yahoo Finance
 - Resamples data to custom intervals for analysis (5, 10, 15, or 30 min)
-- Calculates technical indicators (RSI, Moving Averages, Bollinger Bands, MACD)
+- Calculates technical indicators (RSI, Moving Averages, Bollinger Bands, MACD, Stochastic Oscillator, ATR, OBV, VWAP, ADX)
 - Implements multiple trading strategies:
   - MA crossovers with RSI filters
   - Bollinger Bands mean reversion and breakout strategies
+  - MACD + Stochastic momentum strategy
 - Tracks portfolio performance and simulated trades
 - Provides reporting and alerts via CLI dashboard
 - Includes specialized testing and backtesting functionality
