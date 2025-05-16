@@ -185,7 +185,14 @@ def get_candidates(days=30, top_n=None, min_market_cap=None):
         # Filter by discovery date
         if days:
             cutoff_date = datetime.now(timezone.utc) - pd.Timedelta(days=days)
-            df = df[df['discovered_at'] >= cutoff_date]
+            # Convert datetime columns to compatible types to avoid comparison issues
+            if 'discovered_at' in df.columns:
+                if pd.api.types.is_datetime64_any_dtype(df['discovered_at']):
+                    df = df[df['discovered_at'] >= pd.Timestamp(cutoff_date)]
+                else:
+                    # If not datetime64, convert string dates to datetime
+                    df['discovered_at'] = pd.to_datetime(df['discovered_at'])
+                    df = df[df['discovered_at'] >= pd.Timestamp(cutoff_date)]
         
         # Filter by market cap if specified
         if min_market_cap:
