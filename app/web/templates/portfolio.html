@@ -187,7 +187,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="addPositionForm" method="post" action="#">
+                <form id="addPositionForm" method="post" action="{{ url_for('portfolio_view') }}">
                     <div class="mb-3">
                         <label for="ticker" class="form-label">Ticker Symbol</label>
                         <input type="text" class="form-control" id="ticker" name="ticker" required>
@@ -279,6 +279,8 @@
         {% endif %}
 
         // Add position form handling
+        // Form is now handled by backend route
+        /* 
         document.getElementById('addPositionForm').addEventListener('submit', function(e) {
             e.preventDefault();
             // Here you would submit the form data to an API endpoint
@@ -288,6 +290,7 @@
             const modal = bootstrap.Modal.getInstance(document.getElementById('addPositionModal'));
             modal.hide();
         });
+        */
     });
 </script>
 {% endblock %}
