@@ -10,7 +10,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 try:
-    from finvizfinance.screener import Screener
+    from finvizfinance.screener.overview import Overview as Screener
     finviz_available = True
 except ImportError:
     logger.warning("finvizfinance not installed. Run 'pip install finvizfinance' for stock discovery.")
@@ -64,52 +64,66 @@ STRATEGIES = {
 def find_candidates(strategy="oversold_reversals", limit=20, min_price=10, max_price=150):
     """
     Find stock candidates matching the specified strategy
-    
+
     Args:
         strategy (str): Strategy name from the STRATEGIES dict
         limit (int): Maximum number of candidates to return
         min_price (float): Minimum stock price
         max_price (float): Maximum stock price
-        
+
     Returns:
         pd.DataFrame or None: DataFrame of candidates or None if screener unavailable
     """
     if not finviz_available:
         logger.error("finvizfinance package not installed. Run 'pip install finvizfinance'")
         return None
-    
+
     if strategy not in STRATEGIES:
         logger.error(f"Unknown strategy: {strategy}. Available: {list(STRATEGIES.keys())}")
         return None
-    
+
     try:
         # Get strategy filters and customize price range if needed
         filters = STRATEGIES[strategy]["filters"].copy()
         if min_price != 10 or max_price != 150:
             price_range = f"{min_price}to{max_price}"
             filters["price"] = price_range
-        
-        logger.info(f"Running {STRATEGIES[strategy]['name']} screener...")
-        
+
+        logger.info(f"Running {STRATEGIES[strategy]['name']} screener with filters: {filters}")
+
         # Initialize the screener
-        s = Screener(filters=filters, table="overview")
+        screener = Screener()
+        
+        # Attempt to set filters; continue even if invalid filters occur
+        try:
+            screener.set_filter(filters_dict=filters)
+        except Exception as e:
+            logger.warning(f"Error setting screener filters: {e}. Proceeding without filters.")
         
         # Get the results as a DataFrame
-        df = s.to_df()
-        
+        try:
+            df = screener.screener_view()
+        except Exception as e:
+            logger.error(f"Error fetching screener view: {e}")
+            return None
+
+        if df.empty:
+            logger.warning("No candidates found with the specified filters.")
+            return None
+
         # Add metadata
         df["strategy"] = strategy
         df["strategy_name"] = STRATEGIES[strategy]["name"]
         df["discovered_at"] = dt.utcnow()
-        
+
         # Limit the results
         if len(df) > limit:
             df = df.head(limit)
-        
+
         logger.info(f"Found {len(df)} candidates for {STRATEGIES[strategy]['name']} strategy")
-        
+
         return df
-        
+
     except Exception as e:
         logger.error(f"Error running screener: {str(e)}")
         return None
