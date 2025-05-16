@@ -62,3 +62,18 @@ venv.bak/
 results/*
 .vscode/*
 portfolio_config.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+*.ipynb_checkpoints
+# PyCharm
+.idea/
+# Spyder project settings
+.spyproject/
+
+data/
+# Pytest
+.pytest_cache/
+# mypy
+.mypy_cache/
