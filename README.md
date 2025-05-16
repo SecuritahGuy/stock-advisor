@@ -275,6 +275,65 @@ The MACD + Stochastic strategy has been significantly improved to work better wi
 - **Enhanced Logging**: More detailed logging to track indicator calculation and strategy behavior
 - **Performance Metrics**: Additional metrics for evaluating strategy performance in backtests
 
+## Future Improvements and Roadmap
+
+### Short-term Improvements (Next 1-3 Months)
+
+- **Web Dashboard**: Create a Flask or Streamlit-based web interface for easier monitoring of signals and portfolio performance
+- **Parameter Optimization**: Implement grid search and genetic algorithms for automated strategy optimization
+- **Portfolio Optimization**: Add portfolio allocation recommendations based on risk-adjusted returns
+- **Indicator Combination Analysis**: Investigate which indicator combinations perform best across different market conditions
+- **Custom Alert Rules**: Allow users to define complex conditional alerts based on multiple indicators
+
+### Medium-term Enhancements (3-6 Months)
+
+- **Machine Learning Integration**: Implement ML models to identify patterns and predict price movements
+- **Real-time Data Integration**: Connect to websocket APIs for real-time market data instead of periodic polling
+- **Market Sentiment Analysis**: Incorporate news sentiment and social media analysis to enhance trading signals
+- **Automated Trading**: Add integration with brokerage APIs for automated execution of trading signals
+- **Multi-timeframe Analysis**: Enhance strategies to consider signals across multiple timeframes
+- **Risk Management Module**: Develop more sophisticated position sizing and risk management rules
+
+### Long-term Vision (6+ Months)
+
+- **Deep Learning Models**: Implement advanced deep learning models (LSTM, Transformers) for price prediction
+- **Alternative Data Sources**: Integrate alternative data like options flow, dark pool activity, and institutional positioning
+- **Crypto Market Support**: Extend functionality to cryptocurrency markets with exchange API integrations
+- **Community Features**: Create a platform for users to share and collaborate on strategy development
+- **Mobile Application**: Develop a companion mobile app for alerts and monitoring on the go
+- **Strategy Marketplace**: Build a marketplace where users can subscribe to or purchase proven strategies
+
+### Technical Debt and Infrastructure
+
+- **Testing Coverage**: Increase unit test and integration test coverage to at least 80%
+- **Documentation**: Create comprehensive API documentation and extensive code examples
+- **Performance Optimization**: Refactor critical path code for improved execution speed
+- **Data Storage Solutions**: Migrate to more scalable storage solutions for larger datasets
+- **Containerization**: Improve Docker configurations for easier deployment across environments
+
+## Current Project Status
+
+As of May 2025, the project has successfully implemented three main trading strategies with comprehensive backtesting capabilities. The recent focus has been on improving the MACD + Stochastic strategy to work reliably with limited historical data and fixing technical issues with indicator calculations.
+
+The backtesting module now provides detailed performance metrics including CAGR, Sharpe ratio, maximum drawdown, win rate, and profit factor. We've also developed specialized debugging tools to help visualize and understand strategy behavior.
+
+Next steps include web interface development, parameter optimization, and machine learning integration. Community contributions are welcome, especially in these planned improvement areas.
+
+## Contributing
+
+Contributions to the Stock Advisor project are welcome! Here's how you can help:
+
+1. **Bug Reports**: If you find a bug, please create an issue with detailed reproduction steps
+2. **Feature Requests**: Suggest new features through the issues section
+3. **Code Contributions**: 
+   - Fork the repository
+   - Create a feature branch (`git checkout -b feature/amazing-feature`)
+   - Commit your changes (`git commit -m 'Add some amazing feature'`)
+   - Push to the branch (`git push origin feature/amazing-feature`)
+   - Open a Pull Request
+
+Please ensure your code follows the project's style guidelines and includes appropriate tests.
+
 ## Disclaimer
 
 This software is for educational and informational purposes only. It is not intended to be financial advice. Always do your own research and consult with a professional financial advisor before making investment decisions.
