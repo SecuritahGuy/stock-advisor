@@ -139,6 +139,8 @@ def store_valuation(portfolio_name, valuation_data):
     """
     try:
         conn = sqlite3.connect(VALUATION_DB_PATH)
+        conn.execute("PRAGMA journal_mode=WAL")  # Use WAL mode to prevent locking
+        conn.execute("PRAGMA busy_timeout=5000")  # Wait up to 5 seconds on locks
         cursor = conn.cursor()
         
         # Create valuation_history table if it doesn't exist
@@ -162,7 +164,7 @@ def store_valuation(portfolio_name, valuation_data):
             ticker TEXT NOT NULL,
             shares REAL NOT NULL,
             cost_basis REAL NOT NULL,
-            current_price REAL NOT NULL,
+            current_price REAL,
             current_value REAL NOT NULL,
             pl REAL NOT NULL,
             pl_pct REAL NOT NULL,
@@ -199,7 +201,7 @@ def store_valuation(portfolio_name, valuation_data):
                 position['ticker'],
                 position['shares'],
                 position['cost_basis'],
-                position.get('current_price', 0),
+                position.get('current_price', 0),  # Use 0 as fallback for None
                 position['current_value'],
                 position['pl'],
                 position['pl_pct']
@@ -213,6 +215,14 @@ def store_valuation(portfolio_name, valuation_data):
         
     except Exception as e:
         logger.error(f"Error storing valuation: {str(e)}")
+        # Try to close the connection if still open
+        try:
+            if conn and conn.in_transaction:
+                conn.rollback()
+            if conn:
+                conn.close()
+        except:
+            pass
         return False
 
 
@@ -388,3 +398,101 @@ def get_performance_metrics(portfolio_name, period="all"):
     except Exception as e:
         logger.error(f"Error calculating performance metrics: {str(e)}")
         return {}
+
+
+def get_portfolio_valuation(portfolio_obj):
+    """
+    Get the current portfolio valuation.
+    
+    Args:
+        portfolio_obj: Portfolio object instance
+        
+    Returns:
+        dict: Portfolio valuation data
+    """
+    try:
+        # Get all positions from the portfolio
+        positions = portfolio_obj.get_positions()
+        
+        if positions.empty:
+            logger.info(f"No positions found for portfolio {portfolio_obj.name}")
+            return {
+                'total_value': 0,
+                'total_cost': 0,
+                'total_pl': 0,
+                'total_pl_pct': 0,
+                'positions': []
+            }
+        
+        # Get tickers from positions
+        tickers = positions['ticker'].unique().tolist()
+        
+        # Get latest prices for all tickers
+        price_data = get_latest_prices(tickers)
+        
+        # Calculate current value
+        valuation = portfolio_obj.calculate_current_value(price_data)
+        
+        # Store valuation in DB
+        store_valuation(portfolio_obj.name, valuation)
+        
+        return valuation
+        
+    except Exception as e:
+        logger.error(f"Error getting portfolio valuation: {str(e)}")
+        return {
+            'total_value': 0,
+            'total_cost': 0,
+            'total_pl': 0,
+            'total_pl_pct': 0,
+            'positions': []
+        }
+
+
+def get_portfolio_metrics(portfolio_obj, period="month"):
+    """
+    Get portfolio performance metrics.
+    
+    Args:
+        portfolio_obj: Portfolio object instance
+        period (str): Time period ("day", "week", "month", "year", "all")
+        
+    Returns:
+        dict: Portfolio performance metrics
+    """
+    try:
+        # Get performance metrics directly without trying to create a new valuation
+        # which might fail if we don't have all the price data
+        metrics = get_performance_metrics(portfolio_obj.name, period=period)
+        
+        # If metrics are empty, return a default structure
+        if not metrics:
+            return {
+                'start_date': None,
+                'end_date': datetime.now(),
+                'start_value': 0,
+                'end_value': 0,
+                'absolute_return': 0,
+                'percent_return': 0,
+                'annualized_return': 0,
+                'volatility': 0,
+                'sharpe_ratio': 0,
+                'days_held': 0
+            }
+        
+        return metrics
+        
+    except Exception as e:
+        logger.error(f"Error getting portfolio metrics: {str(e)}")
+        return {
+            'start_date': None,
+            'end_date': datetime.now(),
+            'start_value': 0,
+            'end_value': 0,
+            'absolute_return': 0,
+            'percent_return': 0,
+            'annualized_return': 0,
+            'volatility': 0,
+            'sharpe_ratio': 0,
+            'days_held': 0
+        }
