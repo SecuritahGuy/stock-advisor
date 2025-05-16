@@ -14,6 +14,7 @@ import yfinance as yf
 from app.indicators.tech import calculate_all_indicators
 from app.strategy.ma_crossover import MACrossoverStrategy
 from app.strategy.bollinger_bands import BBandsStrategy
+from app.strategy.macd_stochastic import MACDStochasticStrategy
 from app.strategy.base import SignalAction
 
 # Configure logging
@@ -449,6 +450,8 @@ def run_backtest(ticker, strategy, start_date, end_date, interval="1d", plot=Tru
     Returns:
         dict: Backtest results
     """
+    logger.info(f"Running backtest for {ticker} with {strategy.name} strategy from {start_date} to {end_date}")
+    
     # Load historical data
     df = load_historical_data(ticker, start_date, end_date, interval)
     
@@ -515,8 +518,16 @@ def parameter_sweep(ticker, param_grid, start_date, end_date, interval="1d"):
     for params in itertools.product(*param_values):
         param_dict = dict(zip(param_names, params))
         
-        # Create strategy with these parameters
-        strategy = MACrossoverStrategy(**param_dict)
+        # Determine strategy type based on parameters
+        if 'fast_ma' in param_dict:
+            strategy = MACrossoverStrategy(**param_dict)
+        elif 'bb_length' in param_dict:
+            strategy = BBandsStrategy(**param_dict)
+        elif 'fast' in param_dict:
+            strategy = MACDStochasticStrategy(**param_dict)
+        else:
+            logger.error("Unknown strategy type based on parameters")
+            continue
         
         # Run backtest
         backtester = Backtester(strategy)
@@ -564,7 +575,8 @@ def main():
     parser.add_argument("--start-date", default="2015-01-01", help="Start date (YYYY-MM-DD)")
     parser.add_argument("--end-date", default=None, help="End date (YYYY-MM-DD), defaults to today")
     parser.add_argument("--interval", default="1d", choices=["1d", "1wk", "1mo"], help="Data interval")
-    parser.add_argument("--strategy", default="ma_crossover", choices=["ma_crossover", "bollinger_bands"], 
+    parser.add_argument("--strategy", default="ma_crossover", 
+                        choices=["ma_crossover", "bollinger_bands", "macd_stochastic"], 
                         help="Trading strategy to backtest")
     parser.add_argument("--days", type=int, default=365, help="Days to backtest (alternative to start-date)")
     
@@ -576,6 +588,16 @@ def main():
     parser.add_argument("--bb-length", type=int, default=20, help="Bollinger Bands period")
     parser.add_argument("--bb-std", type=float, default=2.0, help="Bollinger Bands std deviations")
     parser.add_argument("--bb-breakout", action="store_true", help="Use breakout strategy (default is mean reversion)")
+    
+    # MACD + Stochastic parameters
+    parser.add_argument("--macd-fast", type=int, default=12, help="MACD fast period")
+    parser.add_argument("--macd-slow", type=int, default=26, help="MACD slow period")
+    parser.add_argument("--macd-signal", type=int, default=9, help="MACD signal period")
+    parser.add_argument("--stoch-k", type=int, default=14, help="Stochastic %K period")
+    parser.add_argument("--stoch-d", type=int, default=3, help="Stochastic %D period")
+    parser.add_argument("--stoch-smooth", type=int, default=3, help="Stochastic %K smoothing")
+    parser.add_argument("--stoch-overbought", type=int, default=80, help="Stochastic overbought threshold")
+    parser.add_argument("--stoch-oversold", type=int, default=20, help="Stochastic oversold threshold")
     
     # Shared parameters
     parser.add_argument("--rsi-period", type=int, default=14, help="RSI period")
@@ -595,7 +617,10 @@ def main():
         start_datetime = datetime.strptime(args.end_date, "%Y-%m-%d") - timedelta(days=args.days)
         args.start_date = start_datetime.strftime("%Y-%m-%d")
     
+    # Determine strategy type from parameter grid
     if args.param_sweep:
+        logger.info(f"Running parameter sweep for {args.ticker} with {args.strategy} strategy")
+        
         # Define parameter grid based on strategy
         if args.strategy == "ma_crossover":
             param_grid = {
@@ -605,7 +630,7 @@ def main():
                 'rsi_overbought': [70, 75, 80],
                 'rsi_oversold': [20, 25, 30]
             }
-        else:  # Bollinger Bands
+        elif args.strategy == "bollinger_bands":
             param_grid = {
                 'bb_length': [10, 20, 30],
                 'bb_std': [1.5, 2.0, 2.5],
@@ -613,18 +638,49 @@ def main():
                 'rsi_overbought': [70, 75, 80],
                 'rsi_oversold': [20, 25, 30]
             }
+        else:  # MACD + Stochastic
+            param_grid = {
+                'fast': [8, 12, 16],
+                'slow': [21, 26, 34],
+                'signal': [7, 9, 12],
+                'stoch_k': [9, 14, 21],
+                'stoch_d': [3, 5, 7],
+                'stoch_overbought': [75, 80, 85],
+                'stoch_oversold': [15, 20, 25]
+            }
         
         # Run parameter sweep
-        parameter_sweep(args.ticker, param_grid, args.start_date, args.end_date, args.interval, args.strategy)
+        parameter_sweep(args.ticker, param_grid, args.start_date, args.end_date, args.interval)
     else:
         # Create strategy with specified parameters
-        strategy = MACrossoverStrategy(
-            fast_ma=args.fast_ma,
-            slow_ma=args.slow_ma,
-            rsi_period=args.rsi_period,
-            rsi_overbought=args.rsi_overbought,
-            rsi_oversold=args.rsi_oversold
-        )
+        if args.strategy == "ma_crossover":
+            strategy = MACrossoverStrategy(
+                fast_ma=args.fast_ma,
+                slow_ma=args.slow_ma,
+                rsi_period=args.rsi_period,
+                rsi_overbought=args.rsi_overbought,
+                rsi_oversold=args.rsi_oversold
+            )
+        elif args.strategy == "bollinger_bands":
+            strategy = BBandsStrategy(
+                bb_length=args.bb_length,
+                bb_std=args.bb_std,
+                rsi_period=args.rsi_period,
+                rsi_overbought=args.rsi_overbought,
+                rsi_oversold=args.rsi_oversold,
+                breakout_mode=args.bb_breakout
+            )
+        else:  # MACD + Stochastic
+            strategy = MACDStochasticStrategy(
+                fast=args.macd_fast,
+                slow=args.macd_slow,
+                signal=args.macd_signal,
+                stoch_k=args.stoch_k,
+                stoch_d=args.stoch_d,
+                smooth_k=args.stoch_smooth,
+                stoch_overbought=args.stoch_overbought,
+                stoch_oversold=args.stoch_oversold
+            )
         
         # Run backtest
         run_backtest(args.ticker, strategy, args.start_date, args.end_date, args.interval)
