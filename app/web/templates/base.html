@@ -43,12 +43,24 @@
     </nav>
 
     <main class="container-fluid py-4">
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         {% block content %}{% endblock %}
     </main>
 
     <footer class="footer bg-light py-3 mt-auto">
         <div class="container text-center">
-            <span class="text-muted">Stock Advisor &copy; {% now 'Y' %} | Not financial advice. Use at your own risk.</span>
+            <span class="text-muted">Stock Advisor &copy; {{ current_year }} | Not financial advice. Use at your own risk.</span>
         </div>
     </footer>
 
