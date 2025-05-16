@@ -189,6 +189,18 @@ python test_bbands.py GOOGL --interval 1h --days 30
 
 # Run without showing the plot
 python test_bbands.py AMZN --no-plot
+
+# Test the MACD + Stochastic strategy on AAPL
+python test_macd_stoch.py AAPL
+
+# Use different MACD parameters
+python test_macd_stoch.py SPY --macd-fast 8 --macd-slow 21 --macd-signal 9
+
+# Use different Stochastic parameters
+python test_macd_stoch.py MSFT --stoch-k 9 --stoch-d 5 --stoch-oversold 25
+
+# Test with a different time interval and period
+python test_macd_stoch.py GOOGL --interval 1h --days 90
 ```
 
 You can also backtest full strategies using the backtesting module:
@@ -199,6 +211,9 @@ python backtest.py --ticker AAPL --strategy ma_crossover
 
 # Backtest the Bollinger Bands strategy 
 python backtest.py --ticker SPY --strategy bollinger_bands --days 60
+
+# Backtest the MACD + Stochastic strategy
+python backtest.py --ticker MSFT --strategy macd_stochastic --days 90
 ```
 
 ## Configuring Email Notifications
