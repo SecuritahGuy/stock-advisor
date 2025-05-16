@@ -57,3 +57,6 @@ venv.bak/
 
 # Logs
 *.log
+
+# Results folder
+results/*
