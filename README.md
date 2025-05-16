@@ -1,23 +1,57 @@
 ![CI](https://github.com/yourusername/stock-advisor/actions/workflows/python-tests.yml/badge.svg)
 ![Coverage](https://coveralls.io/repos/github/yourusername/stock-advisor/badge.svg)
+![Dependabot](https://img.shields.io/badge/dependabot-enabled-brightgreen.svg)
+![Contributors](https://img.shields.io/github/contributors/yourusername/stock-advisor.svg)
 
 # Stock Advisor
+
+For Python hobbyists who want disciplined, back-tested trade ideas in < 3 min.
 
 A Python-based stock advisor application that fetches real-time market data, calculates technical indicators, generates trading signals, and manages portfolio simulations.
 
 ## Features
 
-- Fetches 1-minute stock data from Yahoo Finance
-- Resamples data to default **10-minute** intervals (configurable via `INTERVAL_MINUTES` env var: 1–30 min) and custom intervals (5, 15, 30 min)
-- Calculates technical indicators (RSI, Moving Averages, Bollinger Bands, MACD, Stochastic Oscillator, ATR, OBV, VWAP, ADX)
+- Fetches stock data from Yahoo Finance
+- Resamples data to default **10-minute** intervals (configurable via `INTERVAL_MINUTES` env var: 1–30 min)
+- Calculates technical indicators (RSI, Moving Averages, Bollinger Bands, MACD, Stochastic Oscillator)
 - Implements multiple trading strategies:
   - MA crossovers with RSI filters
   - Bollinger Bands mean reversion and breakout strategies
-  - MACD + Stochastic momentum strategy with enhanced backtesting capabilities
+  - MACD + Stochastic momentum strategy
 - Tracks portfolio performance and simulated trades
 - Provides reporting and alerts via CLI dashboard
+- **Discovery engine**: Daily screener auto-adds oversold or breakout candidates to watch-list
 - Includes specialized testing and backtesting functionality
 - Supports Docker deployment with environment variable configuration
+
+## Architecture
+
+```
+┌───────────────┐     ┌───────────────┐     ┌───────────────┐
+│ Yahoo Finance │────>│  Data Fetcher │────>│    Storage    │
+└───────────────┘     └───────────────┘     │SQLite/Parquet │
+                                            └───────┬───────┘
+                                                    │
+                                                    ▼
+┌───────────┐      ┌───────────────┐      ┌────────────┐
+│ Indicators│<─────│ Strategy      │─────>│  Signals   │
+│ RSI, MA.. │─────>│ Engine        │      │ Buy/Sell   │
+└───────────┘      └───────────────┘      └──────┬─────┘
+                                                 │
+                                                 ▼
+                    ┌───────────────┐      ┌────────────┐
+                    │ Portfolio     │<─────│  Reports   │
+                    │ Ledger        │─────>│ Dashboard  │
+                    └───────┬───────┘      └────────────┘
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │  Backtesting  │
+                    │  Validation   │
+                    └───────────────┘
+```
+
+[View full architecture diagram](./assets/architecture.svg)
 
 ## Quick Start (30 sec)
 
@@ -41,6 +75,8 @@ make advisor      # runs advisor dashboard once (--once)
 make live         # live APScheduler loop with default 10-min interval
 make test         # run tests and lint
 make docker-up    # build and start Docker container
+make discover     # run stock screener and find candidates
+make discover-update # run screener and update watch-list
 ```
 
 ## Project Structure
@@ -61,44 +97,22 @@ stock-advisor/
 
 ## Installation
 
-### Option 1: Local Installation
+Choose your setup path:
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/stock-advisor.git
-cd stock-advisor
+| Environment | Requirements | Setup Command | Use Case |
+|-------------|--------------|---------------|----------|
+| **Local**   | Python 3.8–3.12 | `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt` | Development |
+| **Docker**  | Docker, Docker Compose | `cp .env.example .env && docker-compose up -d` | Production |
+| **Codespaces** | GitHub Codespaces | Open in Codespaces | Quick testing |
 
-# Create and activate a virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows, use: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# If you encounter issues with pandas_ta, use this specific numpy version
-# pip install numpy==1.24.3
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your preferred settings and email credentials
-```
-
-### Option 2: Docker Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/stock-advisor.git
-cd stock-advisor
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your preferred settings and email credentials
-
-# Build and start the Docker container
-docker-compose up -d
-```
+*Tip: Run `make quickstart` after setup to fetch data and run the dashboard.*
 
 ## Environment Variables
+
+The application can be configured using environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
 
 The application can be configured using environment variables:
 
@@ -129,11 +143,18 @@ The application loads environment variables via dotenv; see `.env.example` for r
 
 <!-- Added Secrets section to highlight secrets management -->
 
-## Usage
+## Documentation
 
-### Data Fetcher
+- [Quick Start Guide](./docs/quickstart.md)
+- [Trading Strategies](./docs/strategies.md)
+- [Backtesting Guide](./docs/backtesting.md)
+- [Stock Discovery](./docs/discovery.md)
+- [Project Roadmap](./docs/roadmap.md)
 
-Start the data fetcher to collect stock data:
+## Usage Examples
+
+<details>
+<summary>Data Fetcher Examples</summary>
 
 ```bash
 # Run the fetcher in the background (refreshes every 10 minutes)
@@ -150,14 +171,11 @@ python run_fetcher.py --interval 5
 
 # Clean up old data (keeping 30 days by default)
 python run_fetcher.py --clean
-
-# Clean up and keep only 15 days of data
-python run_fetcher.py --clean --keep-days 15
 ```
+</details>
 
-### Advisor Dashboard
-
-Run the advisor dashboard to see portfolio status and signals:
+<details>
+<summary>Advisor Dashboard Examples</summary>
 
 ```bash
 # Run the advisor dashboard in the background
@@ -171,14 +189,11 @@ python advisor.py --daily-summary
 
 # Use a different trading strategy
 python advisor.py --strategy bollinger_bands
-
-# Run with custom ticker list
-python advisor.py --tickers SPY QQQ IWM AAPL
 ```
+</details>
 
-### Portfolio Management
-
-Manage your portfolio with the trade utility:
+<details>
+<summary>Portfolio Management Examples</summary>
 
 ```bash
 # Buy shares
@@ -193,10 +208,10 @@ python trade.py list
 # View transaction history
 python trade.py transactions
 ```
+</details>
 
-### Backtesting
-
-Backtest your strategies with historical data:
+<details>
+<summary>Backtesting Examples</summary>
 
 ```bash
 # Run a backtest with default parameters
@@ -208,58 +223,22 @@ python backtest.py --ticker AAPL --start-date 2020-01-01 --end-date 2023-12-31 -
 # Run a parameter sweep to find optimal settings
 python backtest.py --ticker SPY --param-sweep
 ```
+</details>
 
-### Strategy Testing
-
-Test specific trading strategies on historical data:
+<details>
+<summary>Strategy Testing Examples</summary>
 
 ```bash
 # Test the Bollinger Bands strategy on AAPL
 python test_bbands.py AAPL
 
-# Use different parameters
-python test_bbands.py SPY --bb-length 30 --rsi-period 10
-
-# Test the breakout strategy instead of mean reversion
-python test_bbands.py MSFT --breakout
-
-# Test with a different time interval
-python test_bbands.py GOOGL --interval 1h --days 30
-
-# Run without showing the plot
-python test_bbands.py AMZN --no-plot
-
-# Test the MACD + Stochastic strategy on AAPL
-python test_macd_stoch.py AAPL
-
-# Use different MACD parameters
+# Test the MACD + Stochastic strategy on SPY
 python test_macd_stoch.py SPY --macd-fast 8 --macd-slow 21 --macd-signal 9
 
-# Use different Stochastic parameters
-python test_macd_stoch.py MSFT --stoch-k 9 --stoch-d 5 --stoch-oversold 25
-
-# Test with a different time interval and period
-python test_macd_stoch.py GOOGL --interval 1h --days 90
-
-# Test with different oversold/overbought thresholds
-python test_macd_stoch.py AAPL --stoch-oversold 30 --stoch-overbought 70
-```
-
-You can also backtest full strategies using the backtesting module:
-
-```bash
 # Backtest the MA Crossover strategy
 python backtest.py --ticker AAPL --strategy ma_crossover
-
-# Backtest the Bollinger Bands strategy 
-python backtest.py --ticker SPY --strategy bollinger_bands --days 60
-
-# Backtest the MACD + Stochastic strategy
-python backtest.py --ticker MSFT --strategy macd_stochastic --days 90
-
-# Debugging strategy behavior
-python debug_macd_stoch.py --ticker SPY
 ```
+</details>
 
 ## Scheduling
 
