@@ -9,9 +9,10 @@ import time
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+import pandas as pd
 
 from app.data.data_fetch import fetch_stock_data, resample_data, is_market_open
-from app.data.storage import load_from_sqlite, save_to_sqlite
+from app.data.storage import load_from_sqlite, save_to_sqlite, load_from_parquet
 from app.indicators.tech import calculate_all_indicators
 from app.strategy.ma_crossover import MACrossoverStrategy
 from app.strategy.bollinger_bands import BBandsStrategy
@@ -78,6 +79,38 @@ def initialize(strategy_name="ma_crossover"):
     logger.info(f"Initialized advisor components with {strategy.name} strategy")
 
 
+def load_data_with_fallback(ticker):
+    """
+    Load stock data with fallback mechanisms.
+    
+    Args:
+        ticker (str): Stock ticker symbol
+        
+    Returns:
+        pd.DataFrame: DataFrame with loaded data or empty DataFrame if no data is found
+    """
+    try:
+        # First try to load from SQLite
+        logger.info(f"Attempting to load {ticker} data from SQLite")
+        df = load_from_sqlite(table_name="stock_data_10min", ticker=ticker)
+        
+        # If that fails or returns empty, try loading from parquet
+        if df.empty:
+            logger.info(f"No SQLite data found for {ticker}, trying Parquet files")
+            df = load_from_parquet(ticker)
+            
+        if df.empty:
+            logger.warning(f"No data found for {ticker} in any storage")
+            return pd.DataFrame()
+            
+        logger.info(f"Successfully loaded {len(df)} rows for {ticker}")
+        return df
+        
+    except Exception as e:
+        logger.error(f"Error loading data for {ticker}: {str(e)}")
+        return pd.DataFrame()
+
+
 def process_ticker(ticker):
     """
     Process a single ticker: load data, calculate indicators, and generate signals.
@@ -90,7 +123,7 @@ def process_ticker(ticker):
     """
     try:
         # Load the latest data
-        df = load_from_sqlite(table_name="stock_data_10min", ticker=ticker)
+        df = load_data_with_fallback(ticker)
         
         if df.empty:
             logger.warning(f"No data found for {ticker}")
