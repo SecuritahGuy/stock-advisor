@@ -60,3 +60,4 @@ venv.bak/
 
 # Results folder
 results/*
+.vscode/*
