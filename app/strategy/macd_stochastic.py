@@ -83,8 +83,23 @@ class MACDStochasticStrategy(Strategy):
         
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
-            logger.error(f"Missing required columns: {missing_columns}")
-            return []
+            # Check if the alternative columns without period numbers exist
+            if 'stoch_k' in df.columns and 'stoch_d' in df.columns:
+                logger.info("Found alternative stochastic column names without period numbers")
+                stoch_k_col = 'stoch_k'
+                stoch_d_col = 'stoch_d'
+                # Re-check for missing columns with the new column names
+                alt_required_columns = [
+                    'ticker', 'Close', 'macd', 'macd_signal', 'macd_hist',
+                    stoch_k_col, stoch_d_col
+                ]
+                missing_columns = [col for col in alt_required_columns if col not in df.columns]
+                if missing_columns:
+                    logger.error(f"Missing required columns even with alternatives: {missing_columns}")
+                    return []
+            else:
+                logger.error(f"Missing required columns: {missing_columns}")
+                return []
             
         # Ensure the DataFrame is sorted by time
         if 'Datetime' in df.columns:
