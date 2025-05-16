@@ -93,16 +93,43 @@ def add_bollinger_bands(df, length=20, std=2, column='Close'):
     """
     try:
         logger.info(f"Calculating Bollinger Bands({length}, {std}) on {column}")
+        # Use pandas_ta for Bollinger Bands calculation
         bbands = ta.bbands(df[column], length=length, std=std)
         
-        # Rename columns to a simpler format
-        bbands.columns = [f'bb_lower_{length}', f'bb_middle_{length}', f'bb_upper_{length}']
-        
-        # Join with original DataFrame
-        df = df.join(bbands)
+        # Check if bbands is not None and has the expected columns
+        if bbands is not None and len(bbands.columns) >= 3:
+            # Get the column names from the returned DataFrame
+            col_names = bbands.columns.tolist()
+            
+            # Rename columns to a simpler format with length
+            bbands_renamed = bbands.copy()
+            bbands_renamed.columns = [f'bb_lower_{length}', f'bb_middle_{length}', f'bb_upper_{length}']
+            
+            # Join with original DataFrame
+            df = df.join(bbands_renamed)
+        else:
+            logger.warning("Bollinger Bands calculation returned unexpected format")
+            
+            # Fallback to manual calculation
+            df[f'bb_middle_{length}'] = df[column].rolling(window=length).mean()
+            df[f'bb_std_{length}'] = df[column].rolling(window=length).std()
+            df[f'bb_upper_{length}'] = df[f'bb_middle_{length}'] + (df[f'bb_std_{length}'] * std)
+            df[f'bb_lower_{length}'] = df[f'bb_middle_{length}'] - (df[f'bb_std_{length}'] * std)
+            
         return df
     except Exception as e:
         logger.error(f"Error calculating Bollinger Bands: {str(e)}")
+        
+        # Fallback to manual calculation on exception
+        try:
+            logger.info("Attempting manual calculation of Bollinger Bands")
+            df[f'bb_middle_{length}'] = df[column].rolling(window=length).mean()
+            df[f'bb_std_{length}'] = df[column].rolling(window=length).std()
+            df[f'bb_upper_{length}'] = df[f'bb_middle_{length}'] + (df[f'bb_std_{length}'] * std)
+            df[f'bb_lower_{length}'] = df[f'bb_middle_{length}'] - (df[f'bb_std_{length}'] * std)
+        except Exception as e2:
+            logger.error(f"Error in manual Bollinger Bands calculation: {str(e2)}")
+            
         return df
 
 
@@ -177,8 +204,8 @@ def add_stochastic(df, k_period=14, d_period=3, column_close='Close', column_hig
         logger.info(f"Calculating Stochastic({k_period},{d_period})")
         stoch = ta.stoch(df[column_high], df[column_low], df[column_close], k=k_period, d=d_period)
         
-        # Rename columns to a simpler format
-        stoch.columns = ['stoch_k', 'stoch_d']
+        # Rename columns to include the period
+        stoch.columns = [f'stoch_k{k_period}', f'stoch_d{k_period}']
         
         # Join with original DataFrame
         df = df.join(stoch)
@@ -366,7 +393,8 @@ def calculate_all_indicators(df):
     # Add VWAP
     result = add_vwap(result)
     
-    logger.info("Technical indicators calculation complete")
+    # Log available columns
+    logger.info(f"Technical indicators calculation complete. Available indicator columns: {[col for col in result.columns if col not in df.columns]}")
     return result
 
 
