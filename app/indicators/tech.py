@@ -93,42 +93,36 @@ def add_bollinger_bands(df, length=20, std=2, column='Close'):
     """
     try:
         logger.info(f"Calculating Bollinger Bands({length}, {std}) on {column}")
-        # Use pandas_ta for Bollinger Bands calculation
-        bbands = ta.bbands(df[column], length=length, std=std)
         
-        # Check if bbands is not None and has the expected columns
-        if bbands is not None and len(bbands.columns) >= 3:
-            # Get the column names from the returned DataFrame
-            col_names = bbands.columns.tolist()
-            
-            # Rename columns to a simpler format with length
-            bbands_renamed = bbands.copy()
-            bbands_renamed.columns = [f'bb_lower_{length}', f'bb_middle_{length}', f'bb_upper_{length}']
-            
-            # Join with original DataFrame
-            df = df.join(bbands_renamed)
-        else:
-            logger.warning("Bollinger Bands calculation returned unexpected format")
-            
-            # Fallback to manual calculation
-            df[f'bb_middle_{length}'] = df[column].rolling(window=length).mean()
-            df[f'bb_std_{length}'] = df[column].rolling(window=length).std()
-            df[f'bb_upper_{length}'] = df[f'bb_middle_{length}'] + (df[f'bb_std_{length}'] * std)
-            df[f'bb_lower_{length}'] = df[f'bb_middle_{length}'] - (df[f'bb_std_{length}'] * std)
-            
+        # Skip pandas_ta and use manual calculation directly
+        # This avoids the "Length mismatch" error that occurs with pandas_ta
+        df[f'bb_middle_{length}'] = df[column].rolling(window=length).mean()
+        df[f'bb_std_{length}'] = df[column].rolling(window=length).std()
+        df[f'bb_upper_{length}'] = df[f'bb_middle_{length}'] + (df[f'bb_std_{length}'] * std)
+        df[f'bb_lower_{length}'] = df[f'bb_middle_{length}'] - (df[f'bb_std_{length}'] * std)
+        
+        logger.info("Successfully calculated Bollinger Bands manually")
         return df
+        
     except Exception as e:
         logger.error(f"Error calculating Bollinger Bands: {str(e)}")
         
-        # Fallback to manual calculation on exception
+        # Attempt to recover with a different approach if the first one fails
         try:
-            logger.info("Attempting manual calculation of Bollinger Bands")
-            df[f'bb_middle_{length}'] = df[column].rolling(window=length).mean()
-            df[f'bb_std_{length}'] = df[column].rolling(window=length).std()
-            df[f'bb_upper_{length}'] = df[f'bb_middle_{length}'] + (df[f'bb_std_{length}'] * std)
-            df[f'bb_lower_{length}'] = df[f'bb_middle_{length}'] - (df[f'bb_std_{length}'] * std)
+            logger.info("Attempting alternative calculation of Bollinger Bands")
+            # Calculate SMA
+            ma = df[column].rolling(window=length).mean()
+            # Calculate Standard Deviation
+            std_dev = df[column].rolling(window=length).std()
+            # Calculate Upper and Lower Bands
+            df[f'bb_middle_{length}'] = ma
+            df[f'bb_std_{length}'] = std_dev
+            df[f'bb_upper_{length}'] = ma + (std_dev * std)
+            df[f'bb_lower_{length}'] = ma - (std_dev * std)
         except Exception as e2:
-            logger.error(f"Error in manual Bollinger Bands calculation: {str(e2)}")
+            logger.error(f"Error in alternative Bollinger Bands calculation: {str(e2)}")
+            
+        return df
             
         return df
 
@@ -204,14 +198,37 @@ def add_stochastic(df, k_period=14, d_period=3, column_close='Close', column_hig
         logger.info(f"Calculating Stochastic({k_period},{d_period})")
         stoch = ta.stoch(df[column_high], df[column_low], df[column_close], k=k_period, d=d_period)
         
-        # Rename columns to include the period
+        # Rename columns to include the period, and also provide period-less names 
+        # for compatibility with the existing strategy code
         stoch.columns = [f'stoch_k{k_period}', f'stoch_d{k_period}']
         
         # Join with original DataFrame
         df = df.join(stoch)
+        
+        # Add period-less column names for backward compatibility
+        df['stoch_k'] = df[f'stoch_k{k_period}']
+        df['stoch_d'] = df[f'stoch_d{k_period}']
+        
         return df
     except Exception as e:
         logger.error(f"Error calculating Stochastic: {str(e)}")
+        # Try manual calculation as a fallback
+        try:
+            logger.info("Attempting manual Stochastic calculation")
+            # Calculate %K
+            low_min = df[column_low].rolling(window=k_period).min()
+            high_max = df[column_high].rolling(window=k_period).max()
+            k_raw = 100 * ((df[column_close] - low_min) / (high_max - low_min))
+            df[f'stoch_k{k_period}'] = k_raw.rolling(window=3).mean()  # Apply 3-period smoothing
+            
+            # Calculate %D
+            df[f'stoch_d{k_period}'] = df[f'stoch_k{k_period}'].rolling(window=d_period).mean()
+            
+            # Add period-less column names for backward compatibility
+            df['stoch_k'] = df[f'stoch_k{k_period}']
+            df['stoch_d'] = df[f'stoch_d{k_period}']
+        except Exception as e2:
+            logger.error(f"Error in manual Stochastic calculation: {str(e2)}")
         return df
 
 
