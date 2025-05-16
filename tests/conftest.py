@@ -46,9 +46,3 @@ from app.screener.discover import Screener
 def screener():
     return Screener()
 
-# pytest.ini
-[pytest]
-testpaths = tests
-python_files = test_*.py
-python_functions = test_*
-python_classes = Test*
