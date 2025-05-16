@@ -1,3 +1,6 @@
+![CI](https://github.com/yourusername/stock-advisor/actions/workflows/python-tests.yml/badge.svg)
+![Coverage](https://coveralls.io/repos/github/yourusername/stock-advisor/badge.svg)
+
 # Stock Advisor
 
 A Python-based stock advisor application that fetches real-time market data, calculates technical indicators, generates trading signals, and manages portfolio simulations.
@@ -5,7 +8,7 @@ A Python-based stock advisor application that fetches real-time market data, cal
 ## Features
 
 - Fetches 1-minute stock data from Yahoo Finance
-- Resamples data to custom intervals for analysis (5, 10, 15, or 30 min)
+- Resamples data to default **10-minute** intervals (configurable via `INTERVAL_MINUTES` env var: 1–30 min) and custom intervals (5, 15, 30 min)
 - Calculates technical indicators (RSI, Moving Averages, Bollinger Bands, MACD, Stochastic Oscillator, ATR, OBV, VWAP, ADX)
 - Implements multiple trading strategies:
   - MA crossovers with RSI filters
@@ -15,6 +18,30 @@ A Python-based stock advisor application that fetches real-time market data, cal
 - Provides reporting and alerts via CLI dashboard
 - Includes specialized testing and backtesting functionality
 - Supports Docker deployment with environment variable configuration
+
+## Quick Start (30 sec)
+
+```bash
+git clone https://github.com/yourusername/stock-advisor.git && \
+cd stock-advisor && \
+make quickstart   # ⏳ installs deps, fetches last hour, prints dashboard once
+```
+
+*Need a live feed?*
+
+```bash
+make live         # polls every 10 min (INTERVAL_MINUTES env var)
+```
+
+## Makefile Commands
+
+```bash
+make fetch        # fetches data according to DATA_RETENTION_DAYS and INTERVAL_MINUTES
+make advisor      # runs advisor dashboard once (--once)
+make live         # live APScheduler loop with default 10-min interval
+make test         # run tests and lint
+make docker-up    # build and start Docker container
+```
 
 ## Project Structure
 
@@ -80,6 +107,7 @@ The application can be configured using environment variables:
 | `TICKERS` | Comma-separated list of stock symbols | SPY,AAPL,MSFT,GOOGL,AMZN |
 | `LOG_LEVEL` | Logging level | INFO |
 | `DATA_RETENTION_DAYS` | Days of historical data to retain | 30 |
+| `INTERVAL_MINUTES` | Polling interval in minutes (1–30) | 10 |
 | `EMAIL_ENABLED` | Enable email notifications | False |
 | `SMTP_SERVER` | SMTP server for email | smtp.gmail.com |
 | `SMTP_PORT` | SMTP port | 587 |
@@ -93,6 +121,13 @@ You can set these in the `.env` file or pass them as environment variables when 
 # Running with Docker and environment variables
 docker run -e TICKERS=SPY,QQQ,AAPL -e DATA_RETENTION_DAYS=60 stock-advisor
 ```
+
+## Secrets
+
+**Never commit `.env` to git.** Use GitHub Secrets or a `.secrets/` file in Docker.
+The application loads environment variables via dotenv; see `.env.example` for reference.
+
+<!-- Added Secrets section to highlight secrets management -->
 
 ## Usage
 
@@ -225,6 +260,18 @@ python backtest.py --ticker MSFT --strategy macd_stochastic --days 90
 # Debugging strategy behavior
 python debug_macd_stoch.py --ticker SPY
 ```
+
+## Scheduling
+
+| Mode        | Command                                                    | Use Case        |
+| ----------- | ---------------------------------------------------------- | --------------- |
+| Manual      | `make fetch && make advisor`                               | One-off test    |
+| APScheduler | `make live`                                                | Dev desktop     |
+| System Cron | `*/10 14-21 * * 1-5 /usr/bin/python .../advisor.py`        | VPS / always-on |
+
+*APScheduler auto-pauses outside US market hours; adjust in `config/market_hours.py`.*
+
+<!-- Added Scheduling section for clarity on execution modes -->
 
 ## Configuring Email Notifications
 
