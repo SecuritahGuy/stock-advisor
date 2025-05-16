@@ -1,0 +1,26 @@
+{
+    "portfolio_name": "default",
+    "positions": [
+        {
+            "ticker": "AAPL",
+            "shares": 10,
+            "cost_basis": 175.50,
+            "purchase_date": "2025-01-15",
+            "notes": "Initial position in Apple"
+        },
+        {
+            "ticker": "TSLA",
+            "shares": 5,
+            "cost_basis": 212.75,
+            "purchase_date": "2025-02-10",
+            "notes": "Long-term growth investment"
+        },
+        {
+            "ticker": "SPY",
+            "shares": 8,
+            "cost_basis": 525.25,
+            "purchase_date": "2025-03-05",
+            "notes": "ETF for market exposure"
+        }
+    ]
+}
