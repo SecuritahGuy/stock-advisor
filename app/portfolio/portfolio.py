@@ -366,7 +366,8 @@ class Portfolio:
             current_price = price_data.get(ticker)
             
             if current_price is None:
-                logger.warning(f"No price data available for {ticker}")
+                logger.warning(f"No price data available for {ticker}, using cost basis as fallback")
+                current_price = cost_basis  # Use cost_basis directly now
                 current_value = total_cost_position  # Assume no change if no price data
                 pl = 0
                 pl_pct = 0
@@ -380,7 +381,7 @@ class Portfolio:
                 'ticker': ticker,
                 'shares': shares,
                 'cost_basis': cost_basis,
-                'current_price': current_price if current_price is not None else cost_basis,  # Use cost_basis as fallback
+                'current_price': current_price,  # Already using fallback price if needed
                 'current_value': current_value,
                 'total_cost': total_cost_position,
                 'pl': pl,

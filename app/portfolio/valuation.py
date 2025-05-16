@@ -137,8 +137,9 @@ def store_valuation(portfolio_name, valuation_data):
     Returns:
         bool: True if successful, False otherwise
     """
+    conn = None
     try:
-        conn = sqlite3.connect(VALUATION_DB_PATH)
+        conn = sqlite3.connect(VALUATION_DB_PATH, timeout=10)
         conn.execute("PRAGMA journal_mode=WAL")  # Use WAL mode to prevent locking
         conn.execute("PRAGMA busy_timeout=5000")  # Wait up to 5 seconds on locks
         cursor = conn.cursor()
@@ -201,29 +202,33 @@ def store_valuation(portfolio_name, valuation_data):
                 position['ticker'],
                 position['shares'],
                 position['cost_basis'],
-                position.get('current_price', 0),  # Use 0 as fallback for None
+                position.get('current_price', None),  # Allow None values
                 position['current_value'],
                 position['pl'],
                 position['pl_pct']
             ))
         
         conn.commit()
-        conn.close()
-        
         logger.info(f"Stored valuation for {portfolio_name} at {timestamp}")
         return True
         
     except Exception as e:
         logger.error(f"Error storing valuation: {str(e)}")
-        # Try to close the connection if still open
-        try:
-            if conn and conn.in_transaction:
+        # Try to roll back transaction if there was an error
+        if conn and conn.in_transaction:
+            try:
                 conn.rollback()
-            if conn:
-                conn.close()
-        except:
-            pass
+                logger.info("Transaction rolled back after error")
+            except Exception as rollback_error:
+                logger.error(f"Error rolling back transaction: {str(rollback_error)}")
         return False
+    finally:
+        # Always close the connection in the finally block
+        if conn:
+            try:
+                conn.close()
+            except Exception as close_error:
+                logger.error(f"Error closing database connection: {str(close_error)}")
 
 
 def get_valuation_history(portfolio_name, start_date=None, end_date=None):
