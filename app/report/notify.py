@@ -16,6 +16,21 @@ logging.basicConfig(
 logger = logging.getLogger("notify")
 
 
+def check_email_configuration():
+    """
+    Check if email configuration is set up and log warnings if not.
+    """
+    smtp_username = os.getenv("SMTP_USERNAME")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    smtp_server = os.getenv("SMTP_SERVER")
+    smtp_port = os.getenv("SMTP_PORT")
+
+    if not all([smtp_username, smtp_password, smtp_server, smtp_port]):
+        logger.warning("Email configuration is incomplete. Notifications will be disabled.")
+    else:
+        logger.info("Email configuration is set up correctly.")
+
+
 class EmailNotifier:
     """Class for sending email notifications."""
     
