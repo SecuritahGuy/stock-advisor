@@ -24,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger("run_fetcher")
 
 # Default tickers if not specified in environment or arguments
-DEFAULT_TICKERS = ["SPY", "AAPL", "MSFT", "GOOGL", "AMZN"]
+DEFAULT_TICKERS = ["SPY", "AAPL", "MSFT", "GOOGL", "AMZN", "GOOGL", "TSLA", "F", "SCHD", "NVDA"]
 
 # Get tickers from environment variable if available
 ENV_TICKERS = os.environ.get('TICKERS')
