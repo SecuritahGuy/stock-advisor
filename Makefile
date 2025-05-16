@@ -18,3 +18,9 @@ test:
 
 docker-up:
 	docker-compose up -d
+
+discover:
+	python discover.py
+
+discover-update:
+	python discover.py --update-env
