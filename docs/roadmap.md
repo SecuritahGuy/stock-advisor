@@ -4,34 +4,38 @@ This document outlines the development roadmap for Stock Advisor, prioritized by
 
 ## Current Focus Areas
 
-- Reliable technical indicator calculation with fallback methods
-- Robust backtesting with comprehensive performance metrics
-- Stable data acquisition and storage pipeline
+- Enhancing the web dashboard with more interactive features
+- Parameter optimization for trading strategies
+- Improving portfolio management capabilities
+- Expanding technical indicator reliability with fallback methods
 
 ## Short-term Improvements (Next 90 Days)
 
 ### User Experience
 
-- [ ] Web dashboard with Streamlit for interactive visualization
+- [x] Web dashboard with Flask for interactive visualization
 - [ ] Parameter optimization interface for strategy tuning
 - [ ] Improved alerting with customizable rules
-- [ ] Mobile-responsive design for dashboard
-- [ ] Stock screener integration (see Discovery module)
+- [x] Mobile-responsive design for dashboard
+- [x] Stock screener integration (see Discovery module)
+- [ ] User authentication and profile system for the web dashboard
+- [ ] Real-time chart updates and interactive technical analysis tools
+- [ ] Enhanced position management with editing and partial sells
 
 ### Technical Features
 
-- [ ] Portfolio optimization with risk-adjusted position sizing
+- [x] Portfolio optimization with risk-adjusted position sizing
 - [ ] Parameter grid search with optuna for optimization
 - [ ] Automated strategy validation pipeline
 - [ ] Enhanced data storage with compression and archiving
-- [ ] Discovery module for finding new trading candidates
+- [x] Discovery module for finding new trading candidates
 
 ### Infrastructure
 
 - [ ] Continuous integration improvements
 - [ ] Containerized deployment with Docker Compose
-- [ ] Configuration management enhancements
-- [ ] Improved documentation with examples
+- [x] Configuration management enhancements
+- [x] Improved documentation with examples
 - [ ] Test coverage expansion
 
 ## Medium-term Enhancements (3-6 Months)
