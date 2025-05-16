@@ -15,6 +15,7 @@ from app.data.storage import load_from_sqlite, save_to_sqlite
 from app.indicators.tech import calculate_all_indicators
 from app.strategy.ma_crossover import MACrossoverStrategy
 from app.strategy.bollinger_bands import BBandsStrategy
+from app.strategy.macd_stochastic import MACDStochasticStrategy
 from app.portfolio.portfolio import Portfolio
 from app.portfolio.valuation import get_latest_prices, store_valuation, get_performance_metrics
 from app.report.dashboard import display_dashboard, display_error
@@ -37,7 +38,8 @@ TICKERS = ["SPY", "AAPL", "MSFT", "GOOGL", "AMZN"]
 # Available strategies
 STRATEGIES = {
     "ma_crossover": "Moving Average Crossover with RSI filter",
-    "bollinger_bands": "Bollinger Bands with RSI filter"
+    "bollinger_bands": "Bollinger Bands with RSI filter",
+    "macd_stochastic": "MACD + Stochastic momentum strategy"
 }
 
 # Global variables
@@ -64,6 +66,8 @@ def initialize(strategy_name="ma_crossover"):
         strategy = MACrossoverStrategy(fast_ma=50, slow_ma=200, rsi_period=14)
     elif strategy_name == "bollinger_bands":
         strategy = BBandsStrategy(bb_length=20, bb_std=2, rsi_period=14, mean_reversion=True)
+    elif strategy_name == "macd_stochastic":
+        strategy = MACDStochasticStrategy(fast=12, slow=26, signal=9, stoch_k=14, stoch_d=3)
     else:
         logger.error(f"Unknown strategy: {strategy_name}, defaulting to MA crossover")
         strategy = MACrossoverStrategy(fast_ma=50, slow_ma=200, rsi_period=14)
