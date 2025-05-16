@@ -21,6 +21,36 @@ PORTFOLIO_DB_PATH = DATA_DIR / "portfolio.db"
 VALUATION_DB_PATH = DATA_DIR / "valuation.db"
 
 
+def initialize_stock_data_table():
+    """
+    Initialize the stock_data_10min table in SQLite if it doesn't exist.
+    """
+    try:
+        sqlite_db_path = DATA_DIR / "stock_data.db"
+        conn = sqlite3.connect(sqlite_db_path)
+        cursor = conn.cursor()
+
+        # Create the stock_data_10min table if it doesn't exist
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS stock_data_10min (
+            ticker TEXT NOT NULL,
+            Close REAL NOT NULL,
+            Datetime TIMESTAMP NOT NULL,
+            PRIMARY KEY (ticker, Datetime)
+        )
+        ''')
+
+        conn.commit()
+        conn.close()
+        logger.info("Initialized stock_data_10min table in SQLite.")
+    except Exception as e:
+        logger.error(f"Error initializing stock_data_10min table: {str(e)}")
+
+
+# Ensure the stock_data_10min table exists
+initialize_stock_data_table()
+
+
 def get_latest_prices(tickers):
     """
     Get the latest prices for a list of tickers from the stock data database.
@@ -33,34 +63,62 @@ def get_latest_prices(tickers):
     """
     try:
         sqlite_db_path = DATA_DIR / "stock_data.db"
-        
-        if not sqlite_db_path.exists():
-            logger.warning(f"Stock data database not found at {sqlite_db_path}")
-            return {}
-            
-        conn = sqlite3.connect(sqlite_db_path)
-        
         price_data = {}
         
         for ticker in tickers:
-            # Get the most recent price from the 10-minute data
-            query = '''
-            SELECT ticker, Close, Datetime
-            FROM stock_data_10min
-            WHERE ticker = ?
-            ORDER BY Datetime DESC
-            LIMIT 1
-            '''
+            price = None
             
-            df = pd.read_sql(query, conn, params=(ticker,))
+            # Try SQLite first
+            if sqlite_db_path.exists():
+                try:
+                    conn = sqlite3.connect(sqlite_db_path)
+                    # Get the most recent price from the 10-minute data
+                    query = '''
+                    SELECT ticker, Close, Datetime
+                    FROM stock_data_10min
+                    WHERE ticker = ?
+                    ORDER BY Datetime DESC
+                    LIMIT 1
+                    '''
+                    
+                    df = pd.read_sql(query, conn, params=(ticker,))
+                    conn.close()
+                    
+                    if not df.empty:
+                        price = df['Close'].iloc[0]
+                        logger.info(f"Latest price for {ticker}: ${price:.2f} at {df['Datetime'].iloc[0]}")
+                except Exception as e:
+                    logger.warning(f"Error getting price from SQLite for {ticker}: {str(e)}")
             
-            if not df.empty:
-                price_data[ticker] = df['Close'].iloc[0]
-                logger.info(f"Latest price for {ticker}: ${price_data[ticker]:.2f} at {df['Datetime'].iloc[0]}")
+            # If SQLite failed, try parquet files
+            if price is None:
+                try:
+                    parquet_dir = DATA_DIR / "parquet"
+                    parquet_files = list(parquet_dir.glob(f"{ticker}_*.parquet"))
+                    
+                    if parquet_files:
+                        # Sort files by modification time to get the most recent one
+                        latest_file = sorted(parquet_files, key=lambda x: x.stat().st_mtime, reverse=True)[0]
+                        df = pd.read_parquet(latest_file)
+                        
+                        if not df.empty:
+                            # Sort by datetime to get the most recent row
+                            if 'Datetime' in df.columns:
+                                df = df.sort_values('Datetime', ascending=False)
+                                price = df['Close'].iloc[0]
+                                logger.info(f"Latest price for {ticker} from parquet: ${price:.2f} at {df['Datetime'].iloc[0]}")
+                            elif 'Date' in df.columns:
+                                df = df.sort_values('Date', ascending=False)
+                                price = df['Close'].iloc[0]
+                                logger.info(f"Latest price for {ticker} from parquet: ${price:.2f} at {df['Date'].iloc[0]}")
+                except Exception as e:
+                    logger.warning(f"Error getting price from parquet for {ticker}: {str(e)}")
+            
+            if price is not None:
+                price_data[ticker] = price
             else:
-                logger.warning(f"No price data found for {ticker}")
+                logger.warning(f"No price data found for {ticker} in any storage")
         
-        conn.close()
         return price_data
         
     except Exception as e:
