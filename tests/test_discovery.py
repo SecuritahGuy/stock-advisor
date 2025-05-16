@@ -14,12 +14,12 @@ class TestStockDiscovery(unittest.TestCase):
         """Test finding stock candidates with a mock screener"""
         # Setup mock
         mock_instance = MagicMock()
-        mock_instance.to_df.return_value = pd.DataFrame({
-            'Ticker': ['AAPL', 'MSFT', 'GOOGL'],
-            'Company': ['Apple Inc.', 'Microsoft Corp', 'Alphabet Inc.'],
-            'Sector': ['Technology'] * 3,
-            'Price': [150.0, 250.0, 120.0],
-            'Market Cap': ['2.5T', '2.0T', '1.5T']
+        mock_instance.screener_view.return_value = pd.DataFrame({
+            'Ticker': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'NFLX', 'PYPL', 'INTC'],
+            'Company': ['Apple Inc.', 'Microsoft Corp', 'Alphabet Inc.', 'Amazon', 'Meta', 'Tesla', 'Nvidia', 'Netflix', 'PayPal', 'Intel'],
+            'Sector': ['Technology'] * 10,
+            'Price': [150.0, 250.0, 120.0, 140.0, 180.0, 200.0, 220.0, 170.0, 90.0, 110.0],
+            'Market Cap': ['2.5T', '2.0T', '1.5T', '1.4T', '1.2T', '1.0T', '0.9T', '0.8T', '0.7T', '0.6T']
         })
         mock_screener.return_value = mock_instance
         
@@ -28,7 +28,7 @@ class TestStockDiscovery(unittest.TestCase):
         
         # Assertions
         self.assertIsNotNone(result)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 10)
         self.assertTrue('discovered_at' in result.columns)
         self.assertTrue('strategy' in result.columns)
         
@@ -40,7 +40,7 @@ class TestStockDiscovery(unittest.TestCase):
         """Test finding stock candidates with custom price range"""
         # Setup mock
         mock_instance = MagicMock()
-        mock_instance.to_df.return_value = pd.DataFrame({
+        mock_instance.screener_view.return_value = pd.DataFrame({
             'Ticker': ['AAPL', 'MSFT'],
             'Price': [150.0, 250.0]
         })
@@ -51,9 +51,21 @@ class TestStockDiscovery(unittest.TestCase):
         
         # Assertions
         self.assertIsNotNone(result)
-        # Verify filter included custom price range
-        call_args = mock_screener.call_args[1]
-        self.assertEqual(call_args['filters']['price'], '100to300')
+        
+        # Verify mock was called
+        mock_screener.assert_called_once()
+        
+        # Verify correct filters were set using mock_instance's set_filter
+        calls = mock_instance.set_filter.call_args_list
+        filters_used = None
+        for call in calls:
+            args, kwargs = call
+            if 'filters_dict' in kwargs:
+                filters_used = kwargs['filters_dict']
+                break
+        
+        self.assertIsNotNone(filters_used)
+        self.assertEqual(filters_used['price'], '100to300')
         
     @patch('pandas.DataFrame.to_parquet')
     def test_save_candidates(self, mock_to_parquet):

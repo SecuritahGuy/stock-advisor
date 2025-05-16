@@ -1,11 +1,11 @@
 """
 Stock discovery module - finds new trading candidates using technical and fundamental filters
 """
-from datetime import datetime as dt
 import os
 import pandas as pd
 import logging
 from pathlib import Path
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ def find_candidates(strategy="oversold_reversals", limit=20, min_price=10, max_p
         # Add metadata
         df["strategy"] = strategy
         df["strategy_name"] = STRATEGIES[strategy]["name"]
-        df["discovered_at"] = dt.utcnow()
+        df["discovered_at"] = datetime.now(timezone.utc)
 
         # Limit the results
         if len(df) > limit:
@@ -184,7 +184,7 @@ def get_candidates(days=30, top_n=None, min_market_cap=None):
         
         # Filter by discovery date
         if days:
-            cutoff_date = dt.utcnow() - pd.Timedelta(days=days)
+            cutoff_date = datetime.now(timezone.utc) - pd.Timedelta(days=days)
             df = df[df['discovered_at'] >= cutoff_date]
         
         # Filter by market cap if specified
