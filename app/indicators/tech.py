@@ -3,6 +3,7 @@ Technical indicators calculation module.
 """
 import pandas as pd
 import pandas_ta as ta
+import numpy as np
 import logging
 
 # Configure logging
@@ -28,6 +29,11 @@ def add_rsi(df, length=14, column='Close'):
     try:
         logger.info(f"Calculating RSI{length} on {column}")
         df[f'rsi{length}'] = ta.rsi(df[column], length=length)
+        
+        # Clip values to ensure they are within 0-100 range
+        # This handles floating point precision issues
+        df[f'rsi{length}'] = df[f'rsi{length}'].clip(0, 100)
+        
         return df
     except Exception as e:
         logger.error(f"Error calculating RSI: {str(e)}")
@@ -49,7 +55,7 @@ def add_moving_averages(df, lengths=[50, 200], column='Close'):
     try:
         for length in lengths:
             logger.info(f"Calculating MA{length} on {column}")
-            df[f'ma{length}'] = ta.sma(df[column], length=length)
+            df[f'ma{length}'] = df[column].rolling(window=length).mean()
         return df
     except Exception as e:
         logger.error(f"Error calculating Moving Averages: {str(e)}")
@@ -93,37 +99,20 @@ def add_bollinger_bands(df, length=20, std=2, column='Close'):
     """
     try:
         logger.info(f"Calculating Bollinger Bands({length}, {std}) on {column}")
-        
-        # Skip pandas_ta and use manual calculation directly
-        # This avoids the "Length mismatch" error that occurs with pandas_ta
-        df[f'bb_middle_{length}'] = df[column].rolling(window=length).mean()
-        df[f'bb_std_{length}'] = df[column].rolling(window=length).std()
-        df[f'bb_upper_{length}'] = df[f'bb_middle_{length}'] + (df[f'bb_std_{length}'] * std)
-        df[f'bb_lower_{length}'] = df[f'bb_middle_{length}'] - (df[f'bb_std_{length}'] * std)
-        
+        middle = pd.Series(np.nan, index=df.index)
+        std_dev = pd.Series(np.nan, index=df.index)
+        for i in range(length-1, len(df)):
+            window = df[column].iloc[i-length+1:i+1]
+            middle.iloc[i] = window.mean()
+            std_dev.iloc[i] = window.std()
+        df[f'bb_middle_{length}'] = middle
+        df[f'bb_std_{length}'] = std_dev
+        df[f'bb_upper_{length}'] = middle + (std_dev * std)
+        df[f'bb_lower_{length}'] = middle - (std_dev * std)
         logger.info("Successfully calculated Bollinger Bands manually")
         return df
-        
     except Exception as e:
         logger.error(f"Error calculating Bollinger Bands: {str(e)}")
-        
-        # Attempt to recover with a different approach if the first one fails
-        try:
-            logger.info("Attempting alternative calculation of Bollinger Bands")
-            # Calculate SMA
-            ma = df[column].rolling(window=length).mean()
-            # Calculate Standard Deviation
-            std_dev = df[column].rolling(window=length).std()
-            # Calculate Upper and Lower Bands
-            df[f'bb_middle_{length}'] = ma
-            df[f'bb_std_{length}'] = std_dev
-            df[f'bb_upper_{length}'] = ma + (std_dev * std)
-            df[f'bb_lower_{length}'] = ma - (std_dev * std)
-        except Exception as e2:
-            logger.error(f"Error in alternative Bollinger Bands calculation: {str(e2)}")
-            
-        return df
-            
         return df
 
 
